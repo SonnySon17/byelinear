@@ -131,7 +131,7 @@ attachments | %s
 	}
 
 	iss := &githubIssue{
-		title: fmt.Sprintf("%s: %s", liss.Identifier, liss.Title),
+		title: liss.Title,
 		body:  body,
 		state: liss.State.Name,
 	}
