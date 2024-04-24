@@ -192,12 +192,17 @@ date | %s
 }
 
 var emailsToGithubMap = map[string]string{
-	"gavin@terrastruct.com":     "gavin-ts",
-	"alex@terrastruct.com":      "alixander",
-	"katherine@terrastruct.com": "katwangy",
-	"julio@terrastruct.com":     "ejulio-ts",
-	"bernard@terrastruct.com":   "berniexie",
-	"anmol@terrastruct.com":     "nhooyr",
+	"sonny@chai.finance":   "SonnySon17",
+	"alex@chai.finance":    "imcheck",
+	"chan@portone.io":      "hchanhi",
+	"draven@chai.finance":  "wlsgur828",
+	"jihyeon@chai.finance": "simnalamburt",
+	"leslie@chai.finance":  "lens0021",
+	"mae@chai.finance":     "moonjihae",
+	"matt@chai.finance":    "khj309",
+	"rody@chai.finance":    "aimpugn",
+	"wiz@chai.finance":     "smc0210",
+	"deedee@chai.finance":  "SoleeChoi",
 }
 
 type organization struct {
