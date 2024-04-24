@@ -18,6 +18,7 @@ import (
 
 var byelinearIssueNumber = os.Getenv("BYELINEAR_ISSUE_NUMBER")
 var byelinearCorpus = os.Getenv("BYELINEAR_CORPUS")
+var byelinearTeamName = os.Getenv("BYELINEAR_TEAM_NAME")
 
 var orgName = os.Getenv("BYELINEAR_ORG")
 var repoName = os.Getenv("BYELINEAR_REPO")

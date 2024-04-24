@@ -25,8 +25,8 @@ func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, res
 }
 
 func queryLinearIssues(ctx context.Context, hc *http.Client, before string) ([]*linearIssue, error) {
-	queryString := `query($before: String, $number: Float) {
-		issues(last: 50, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
+	queryString := `query($before: String, $number: Float, $team: String) {
+		issues(last: 50, before: $before, filter: {number: {eq: $number}, team: {name: {eq: $team}}}, includeArchived: true) {
 			nodes {
 				id
 				url
@@ -110,6 +110,7 @@ func queryLinearIssues(ctx context.Context, hc *http.Client, before string) ([]*
 	if err == nil {
 		qreq.Variables["number"] = number
 	}
+	qreq.Variables["team"] = byelinearTeamName
 	err = doLinearQuery(ctx, hc, qreq, &queryResp)
 	if err != nil {
 		return nil, err
