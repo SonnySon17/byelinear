@@ -144,7 +144,6 @@ attachments | %s
 		formatArr(liss.relationsArr()),
 		liss.Parent.Identifier,
 		formatArr(liss.childrenArr()),
-		formatArr(liss.prs()),
 
 		formatArr(liss.attachmentsArr()),
 	)

@@ -68,15 +68,6 @@ func queryLinearIssues(ctx context.Context, hc *http.Client, before string) ([]*
 						body
 					}
 				}
-				integrationResources(last: 10) {
-					nodes {
-						pullRequest {
-							number
-							repoName
-							repoLogin
-						}
-					}
-				}
 				attachments(last: 10) {
 					nodes {
 						url
@@ -170,15 +161,6 @@ type linearIssue struct {
 			} `json:"relatedIssue"`
 		} `json:"nodes"`
 	} `json:"relations"`
-	IntegrationResources struct {
-		Nodes []struct {
-			PullRequest *struct {
-				Number    int    `json:"number"`
-				RepoLogin string `json:"repoLogin"`
-				RepoName  string `json:"repoName"`
-			} `json:"pullRequest"`
-		} `json:"nodes"`
-	} `json:"integrationResources"`
 	Parent struct {
 		Identifier string `json:"identifier"`
 	} `json:"parent"`
@@ -223,20 +205,6 @@ func (li *linearIssue) assignee() string {
 		return ""
 	}
 	return "@" + emailsToGithubMap[li.Assignee.Email]
-}
-
-func (li *linearIssue) prs() []string {
-	var prs []string
-	for _, ir := range li.IntegrationResources.Nodes {
-		if ir.PullRequest != nil {
-			if ir.PullRequest.RepoLogin == orgName && ir.PullRequest.RepoName == repoName {
-				prs = append(prs, fmt.Sprintf("#%d", ir.PullRequest.Number))
-			} else {
-				prs = append(prs, fmt.Sprintf("%s/%s#%d", ir.PullRequest.RepoLogin, ir.PullRequest.RepoName, ir.PullRequest.Number))
-			}
-		}
-	}
-	return prs
 }
 
 func (li *linearIssue) attachmentsArr() []string {
