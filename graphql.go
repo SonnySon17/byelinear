@@ -25,6 +25,7 @@ func doGraphQLQuery(ctx context.Context, url string, hc *http.Client, qreq *grap
 	if err != nil {
 		return nil, nil, err
 	}
+	httpReq.Header.Set("Authorization", linearAPIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := hc.Do(httpReq)
