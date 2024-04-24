@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/go-github/v47/github"
@@ -21,22 +20,6 @@ func (s *state) exportToGithub(ctx context.Context, gc *github.Client, ident str
 		Title:    &iss.title,
 		Assignee: &iss.assignee,
 		Body:     &iss.body,
-	}
-	if len(iss.labels) > 0 {
-		issReq.Labels = new([]string)
-	}
-	for _, l := range iss.labels {
-		*issReq.Labels = append(*issReq.Labels, l.name)
-
-		log.Printf("%s: ensuring label: %s", ident, l.name)
-		if !s.hasLabel(l.name) {
-			color := strings.TrimPrefix(l.color, "#")
-			err := ensureLabel(ctx, gc, l.name, color, l.desc)
-			if err != nil {
-				return "", err
-			}
-			s.Labels = append(s.Labels, l.name)
-		}
 	}
 	log.Printf("%s: creating", ident)
 	giss, _, err := gc.Issues.Create(ctx, orgName, repoName, issReq)
@@ -106,7 +89,6 @@ type githubIssue struct {
 	body     string
 	state    string
 	project  *githubProject
-	labels   []*githubLabel
 	comments []string
 }
 
@@ -125,11 +107,9 @@ state | %s
 project | %s
 priority | %s
 assignee | %s
-labels | %s
 related | %s
 parent | %s
 children | %s
-PRs | %s
 attachments | %s
 `,
 		liss.URL,
@@ -140,7 +120,6 @@ attachments | %s
 		liss.PriorityLabel,
 		liss.assignee(),
 
-		formatArr(liss.labelsArr()),
 		formatArr(liss.relationsArr()),
 		liss.Parent.Identifier,
 		formatArr(liss.childrenArr()),
@@ -180,13 +159,6 @@ date | %s
 	}
 	if liss.Assignee != nil {
 		iss.assignee = emailsToGithubMap[liss.Assignee.Email]
-	}
-	for _, linearLabel := range liss.Labels.Nodes {
-		iss.labels = append(iss.labels, &githubLabel{
-			name:  linearLabel.Name,
-			color: linearLabel.Color,
-			desc:  linearLabel.Description,
-		})
 	}
 	return iss
 }
@@ -437,18 +409,6 @@ func createProject(ctx context.Context, hc *http.Client, orgID string, name stri
 	return queryResp.Data.CreateProjectV2.ProjectV2.ID, queryResp.Data.CreateProjectV2.ProjectV2.Number, nil
 }
 
-func ensureLabel(ctx context.Context, gc *github.Client, name, color, desc string) error {
-	_, _, err := gc.Issues.CreateLabel(ctx, orgName, repoName, &github.Label{
-		Name:        &name,
-		Color:       &color,
-		Description: &desc,
-	})
-	if err != nil && !isAlreadyExistsErr(err) {
-		return err
-	}
-	return nil
-}
-
 func isAlreadyExistsErr(err error) bool {
 	var ghErr *github.ErrorResponse
 	return errors.As(err, &ghErr) && len(ghErr.Errors) == 1 && ghErr.Errors[0].Code == "already_exists"
@@ -521,15 +481,6 @@ func formatArr(v interface{}) string {
 		return s[1 : len(s)-1]
 	}
 	return s
-}
-
-func (s *state) hasLabel(name string) bool {
-	for _, l := range s.Labels {
-		if l == name {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *state) hasProject(name string) (*projectState, bool) {

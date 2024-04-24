@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -50,13 +49,6 @@ func queryLinearIssues(ctx context.Context, hc *http.Client, before string) ([]*
 					description
 				}
 				createdAt
-				labels(last: 10) {
-					nodes {
-						name
-						color
-						description
-					}
-				}
 				comments(last: 10) {
 					nodes {
 						url
@@ -140,14 +132,7 @@ type linearIssue struct {
 		Desc string `json:"description"`
 	} `json:"project"`
 	CreatedAt time.Time `json:"createdAt"`
-	Labels    struct {
-		Nodes []struct {
-			Name        string `json:"name"`
-			Color       string `json:"color"`
-			Description string `json:"description"`
-		} `json:"nodes"`
-	} `json:"labels"`
-	Comments struct {
+	Comments  struct {
 		Nodes []struct {
 			URL       string      `json:"url"`
 			User      *linearUser `json:"user"`
@@ -175,14 +160,6 @@ type linearIssue struct {
 			URL string `json:"url"`
 		} `json:"nodes"`
 	} `json:"attachments"`
-}
-
-func (li *linearIssue) labelsArr() []string {
-	var a []string
-	for _, l := range li.Labels.Nodes {
-		a = append(a, l.Name)
-	}
-	return a
 }
 
 func (li *linearIssue) relationsArr() []string {
