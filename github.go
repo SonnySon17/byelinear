@@ -137,6 +137,10 @@ attachments | %s
 	}
 
 	for _, c := range liss.Comments.Nodes {
+		var email string
+		if user := c.User; user != nil {
+			email = user.Email
+		}
 		iss.comments = append(iss.comments, fmt.Sprintf(`field | value
 |-|-|
 url | %s
@@ -145,7 +149,7 @@ date | %s
 
 %s`,
 			c.URL,
-			emailsToGithubMap[c.User.Email],
+			emailsToGithubMap[email],
 			formatTime(c.CreatedAt),
 			c.Body,
 		))
