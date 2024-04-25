@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,32 +45,46 @@ func (s *state) exportToGithub(ctx context.Context, gc *github.Client, ident str
 			return "", err
 		}
 	}
-	if iss.project != nil {
-		log.Printf("%s: ensuring project: %s", ident, iss.project.name)
-		p, ok := s.hasProject(iss.project.name)
-		if !ok {
-			pID, pnum, err := ensureProject(ctx, gc.Client(), iss.project.name, iss.project.desc)
-			if err != nil {
-				return "", err
-			}
-			si, err := queryStatusField(ctx, gc.Client(), pnum)
-			if err != nil {
-				return "", err
-			}
-			p = &projectState{
-				Name:            iss.project.name,
-				ID:              pID,
-				StatusFieldInfo: si,
-			}
-			s.Projects = append(s.Projects, p)
-		}
-		itemID, err := addIssueToProject(ctx, gc.Client(), p.ID, *giss.NodeID)
+
+	if byelinearProjectName != "" {
+		org, err := queryOrganization(ctx, gc.Client())
+
 		if err != nil {
 			return "", err
 		}
-		err = setProjectIssueStatus(ctx, gc.Client(), p.ID, itemID, p.StatusFieldInfo, iss.state)
-		if err != nil {
-			return "", err
+
+		var pName = byelinearProjectName
+		var pId string
+		var pNum int
+
+		for _, p := range org.projects {
+			if pName == p.title {
+				pId = p.id
+				pNum = p.number
+			}
+		}
+
+		if pId != "" {
+			itemId, err := addIssueToProject(ctx, gc.Client(), pId, *giss.NodeID)
+			if err != nil {
+				return "", err
+			}
+
+			sfi, err := queryStatusField(ctx, gc.Client(), pNum)
+			if err != nil {
+				return "", err
+			}
+
+			ps := &projectState{
+				Name:            pName,
+				ID:              pId,
+				StatusFieldInfo: sfi,
+			}
+
+			err = setProjectIssueStatus(ctx, gc.Client(), pId, itemId, ps.StatusFieldInfo, iss.state)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 	return giss.GetHTMLURL(), nil
@@ -338,86 +351,6 @@ func setProjectIssueStatus(ctx context.Context, hc *http.Client, projectID, issI
 	return doGithubQuery(ctx, hc, qreq, nil)
 }
 
-func ensureProject(ctx context.Context, hc *http.Client, name, desc string) (string, int, error) {
-	org, err := queryOrganization(ctx, hc)
-	if err != nil {
-		return "", 0, err
-	}
-
-	var p *project
-	for _, p2 := range org.projects {
-		if p2.title == name {
-			p = p2
-		}
-	}
-
-	var pID string
-	var pnum int
-	if p != nil {
-		pID = p.id
-		pnum = p.number
-		if p.desc == desc {
-			return pID, pnum, nil
-		}
-	} else {
-		pID, pnum, err = createProject(ctx, hc, org.id, name)
-		if err != nil {
-			return "", 0, err
-		}
-	}
-
-	queryString := `mutation($projectId: ID!, $shortDescription: String) {
-		updateProjectV2(input: {projectId: $projectId, shortDescription: $shortDescription}) {
-			clientMutationId
-		}
-	}`
-	qreq := &graphqlQuery{
-		Query:     queryString,
-		Variables: map[string]interface{}{"projectId": pID, "shortDescription": desc},
-	}
-	err = doGithubQuery(ctx, hc, qreq, nil)
-	if err != nil {
-		return "", 0, err
-	}
-	return pID, pnum, nil
-}
-
-func createProject(ctx context.Context, hc *http.Client, orgID string, name string) (string, int, error) {
-	queryString := `mutation($title: String!, $owner: ID!) {
-		createProjectV2(input: {title: $title, ownerId: $owner}) {
-			projectV2 {
-				id
-				number
-			}
-		}
-	}`
-	var queryResp struct {
-		Data struct {
-			CreateProjectV2 struct {
-				ProjectV2 struct {
-					ID     string `json:"id"`
-					Number int    `json:"number"`
-				} `json:"projectV2"`
-			} `json:"createProjectV2"`
-		} `json:"data"`
-	}
-
-	qreq := &graphqlQuery{
-		Query:     queryString,
-		Variables: map[string]interface{}{"title": name, "owner": orgID},
-	}
-	err := doGithubQuery(ctx, hc, qreq, &queryResp)
-	if err != nil {
-		return "", 0, err
-	}
-	return queryResp.Data.CreateProjectV2.ProjectV2.ID, queryResp.Data.CreateProjectV2.ProjectV2.Number, nil
-}
-
-func isAlreadyExistsErr(err error) bool {
-	var ghErr *github.ErrorResponse
-	return errors.As(err, &ghErr) && len(ghErr.Errors) == 1 && ghErr.Errors[0].Code == "already_exists"
-}
-
 func doGithubQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
 	b, _, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
 	if err != nil {
@@ -485,13 +418,4 @@ func formatArr(v interface{}) string {
 		return s[1 : len(s)-1]
 	}
 	return s
-}
-
-func (s *state) hasProject(name string) (*projectState, bool) {
-	for _, p := range s.Projects {
-		if p.Name == name {
-			return p, true
-		}
-	}
-	return nil, false
 }

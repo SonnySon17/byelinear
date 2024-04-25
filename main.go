@@ -19,6 +19,7 @@ import (
 var byelinearIssueNumber = os.Getenv("BYELINEAR_ISSUE_NUMBER")
 var byelinearCorpus = os.Getenv("BYELINEAR_CORPUS")
 var byelinearTeamName = os.Getenv("BYELINEAR_TEAM_NAME")
+var byelinearProjectName = os.Getenv("BYELINEAR_PROJECT_NAME")
 
 var orgName = os.Getenv("BYELINEAR_ORG")
 var repoName = os.Getenv("BYELINEAR_REPO")
@@ -27,9 +28,8 @@ var githubToken = os.Getenv("GITHUB_TOKEN")
 var linearAPIKey = os.Getenv("LINEAR_API_KEY")
 
 type state struct {
-	Issues   []*issueState   `json:"issues"`
-	Labels   []string        `json:"labels"`
-	Projects []*projectState `json:"projects"`
+	Issues []*issueState `json:"issues"`
+	Labels []string      `json:"labels"`
 }
 
 type issueState struct {
