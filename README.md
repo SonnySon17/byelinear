@@ -15,7 +15,6 @@ Linear에 존재하는 issue를 Github issue로 migration하기 위해 같은 �
 - [278ce0e](https://github.com/portone-io/byelinear/commit/278ce0e61b2d1a5466095447c7b49c7d8eb07b5f): Linear identifier number와 github issue number를 맞추기 위해 삭제된 issue가 있는 경우 빈 issue를 생성 및 즉시 삭제하도록 수정
 
 ## 사용법
-assignee 및 issue, comment 작성자가 github의 username으로 대체되길 원할 경우, [1aa8638](https://github.com/portone-io/byelinear/commit/1aa8638980e8468065cea830bc585662df4b3e3e)룰 참고하여 map을 수정합니다.
 ```shell
 # Linear에 있는 issue들을 Local로 export하기
 $ BYELINEAR_TEAM_NAME={Linear Team Name} LINEAR_API_KEY={Linear API Key} go run . from-linear
@@ -25,6 +24,19 @@ $ BYELINEAR_ISSUE_NUMBER={Linear Issue number} BYELINEAR_TEAM_NAME={Linear Team 
 # Local에 export된 Linear issue를 Github에 import하기
 # Github PAT needs to be granted (repo, read:org, read:project) scopes
 $ BYELINEAR_ORG={Github Organization Name} BYELINEAR_REPO={Github Repository Name} BYELINEAR_PROJECT_NAME={Github Project Name} GITHUB_TOKEN={Github Personal Access Token} go run . to-github
+```
+### 주의 사항
+- assignee 및 issue, comment 작성자가 github의 username으로 대체되길 원할 경우, [1aa8638](https://github.com/portone-io/byelinear/commit/1aa8638980e8468065cea830bc585662df4b3e3e)룰 참고하여 map을 수정합니다.
+- 이미지나 첨부파일 등의 경우 Linear authorization이 필요한 private link로 제공되기때문에 import할 경우 보이지 않게됩니다. Core chapter issue의 경우 Linear issue 내 download link를 jq를 이용해 모두 추출하여 다운받은 뒤 수작업으로 edit하여 첨부하는 식으로 대체하였습니다.
+```shell
+# id 와 함께 url 추출
+$ jq '[.identifier, ((.description, .comments.nodes[].body) | match("https://uploads.linear.app/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"; "g").string)] | select(length >= 2)' SRE-*.json
+
+# url 만 추출
+$ jq '.description, .comments.nodes[].body | match("https://uploads.linear.app/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"; "g").string' -r SRE-*.json
+
+# curl로 파일 다운로드
+$ curl -X GET {url} --header 'Authorization: {Linear API Key}' > {파일명.확장자}
 ```
 
 ------
