@@ -1,3 +1,34 @@
+# Introduction
+Linear에 존재하는 issue를 Github issue로 migration하기 위해 같은 용도인 [byelinear](https://github.com/terrastruct/byelinear)를 fork하여 custom하게 수정한 repository입니다.
+
+## 변경점
+- [06c4404](https://github.com/portone-io/byelinear/commit/06c4404dc8152097cc433508958b4c71dcc19bb5): Linear API Key를 Bearer prefix 없이 Authorization header에 설정하도록 변경
+- [e295061](https://github.com/portone-io/byelinear/commit/e2950616f21adad7c36ba164192db28071371a3c): 현재는 지원하지 않는 Linear GraphQL object를 쿼리하지 않도록 수정
+- [1aa8638](https://github.com/portone-io/byelinear/commit/1aa8638980e8468065cea830bc585662df4b3e3e): assignee 및 author 설정을 위해 Linear email -> Github username map 등록
+- [b8eabaa](https://github.com/portone-io/byelinear/commit/b8eabaa9368fe52319b935b8ebbe9b8216a23e61): 특정 team의 issue만 가져올 수 있도록 argument로 team name 추가 및 query 필터 수정
+- [2e2d0b6](https://github.com/portone-io/byelinear/commit/2e2d0b655606646731d9a63f38e7619bcfe61928): Linear의 label 정보는 가져오지 않도록 관련 코드 삭제
+- [24c164a](https://github.com/portone-io/byelinear/commit/24c164a89f343300e00cee93fdab79ebf9b376d2): Github issue 제목에서 Linear identifier(ex. SRE-17)는 제외하도록 수정
+- [4e7ef07](https://github.com/portone-io/byelinear/commit/4e7ef07e46eba76abf8b79c45d18461ca66c6d33): Slack 등 integration에 의해 생성된 comment에 User 정보가 없어 생기는 버그 수정
+- [8346cab](https://github.com/portone-io/byelinear/commit/8346cabc8c206ffc112049ee761c37da5334728d): Linear의 project 이름에 해당하는 Github project를 찾고 없으면 생성하는 것이 아닌 추가할 issue를 추가할 Github project 명을 직접 입력하도록 argument 추가
+- [37b4e94](https://github.com/portone-io/byelinear/commit/37b4e94e2f2c070c3e6392b9e5823422c6779794): Github API가 rate limit을 초과하였을 때 header에 있는 다음 호출 가능 시간을 print하도록 수정
+- [41e8329](https://github.com/portone-io/byelinear/commit/41e8329544ab680065fc030275c1701dc9526fa9): Linear issue를 업로드하기 전 issue number의 오름차순으로 리스트를 sorting하도록 수정
+- [278ce0e](https://github.com/portone-io/byelinear/commit/278ce0e61b2d1a5466095447c7b49c7d8eb07b5f): Linear identifier number와 github issue number를 맞추기 위해 삭제된 issue가 있는 경우 빈 issue를 생성 및 즉시 삭제하도록 수정
+
+## 사용법
+assignee 및 issue, comment 작성자가 github의 username으로 대체되길 원할 경우, [1aa8638](https://github.com/portone-io/byelinear/commit/1aa8638980e8468065cea830bc585662df4b3e3e)룰 참고하여 map을 수정합니다.
+```shell
+# Linear에 있는 issue들을 Local로 export하기
+$ BYELINEAR_TEAM_NAME={Linear Team Name} LINEAR_API_KEY={Linear API Key} go run . from-linear
+# Test용도로 특정 number의 issue만 export하기
+$ BYELINEAR_ISSUE_NUMBER={Linear Issue number} BYELINEAR_TEAM_NAME={Linear Team Name} LINEAR_API_KEY={Linear API Key} go run . from-linear
+
+# Local에 export된 Linear issue를 Github에 import하기
+# Github PAT needs to be granted (repo, read:org, read:project) scopes
+$ BYELINEAR_ORG={Github Organization Name} BYELINEAR_REPO={Github Repository Name} BYELINEAR_PROJECT_NAME={Github Project Name} GITHUB_TOKEN={Github Personal Access Token} go run . to-github
+```
+
+------
+
 # byelinear
 
 [![ci](https://github.com/terrastruct/byelinear/actions/workflows/ci.yml/badge.svg)](https://github.com/terrastruct/byelinear/actions/workflows/ci.yml)
