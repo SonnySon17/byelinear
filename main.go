@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -231,6 +233,17 @@ func (s *state) toGithub(ctx context.Context) error {
 		log.Fatalf("$BYELINEAR_REPO is required")
 	}
 
+	sort.Slice(s.Issues, func(i, j int) bool {
+		return getNumberFromIssue(s.Issues[i]) < getNumberFromIssue(s.Issues[j])
+	})
+	isAscending, err := isIssuesInAscendingOrder(s.Issues)
+	if err != nil {
+		log.Fatalf("Failed to convert issue number to integer")
+	}
+	if !isAscending {
+		log.Fatalf("Issues are not in ascending order")
+	}
+
 	gchttp := http.DefaultClient
 	if githubToken != "" {
 		gchttp = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
@@ -303,4 +316,29 @@ func (is *issueState) linear() (*linearIssue, error) {
 		return nil, err
 	}
 	return liss, nil
+}
+
+func isIssuesInAscendingOrder(issues []*issueState) (bool, error) {
+	for i, issue := range issues {
+		if i == len(issues)-1 {
+			return true, nil
+		}
+
+		issueNumber, err := strconv.Atoi(strings.Split(issue.Identifier, "-")[1])
+		if err != nil {
+			return false, err
+		}
+
+		nextIssueNumber, err := strconv.Atoi(strings.Split(issues[i+1].Identifier, "-")[1])
+		if err != nil {
+			return false, err
+		}
+
+		if issueNumber >= nextIssueNumber {
+			log.Fatalf("n: %v, n+1: %v", issueNumber, nextIssueNumber)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
