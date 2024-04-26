@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/go-github/v47/github"
@@ -21,8 +22,14 @@ func (s *state) exportToGithub(ctx context.Context, gc *github.Client, ident str
 		Body:     &iss.body,
 	}
 	log.Printf("%s: creating", ident)
-	giss, _, err := gc.Issues.Create(ctx, orgName, repoName, issReq)
+	giss, res, err := gc.Issues.Create(ctx, orgName, repoName, issReq)
 	if err != nil {
+		reset := res.Header.Get("x-ratelimit-reset")
+		if reset != "" {
+			i, _ := strconv.ParseInt(reset, 10, 64)
+			t := time.Unix(i, 0)
+			log.Printf("Please try after: %v", t)
+		}
 		return "", err
 	}
 	if iss.state == "Done" || iss.state == "Canceled" {
@@ -352,8 +359,16 @@ func setProjectIssueStatus(ctx context.Context, hc *http.Client, projectID, issI
 }
 
 func doGithubQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
-	b, _, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
+	b, res, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
 	if err != nil {
+		if res != nil {
+			reset := res.Header.Get("x-ratelimit-reset")
+			if reset != "" {
+				i, _ := strconv.ParseInt(reset, 10, 64)
+				t := time.Unix(i, 0)
+				log.Printf("Please try after: %v", t)
+			}
+		}
 		return err
 	}
 
