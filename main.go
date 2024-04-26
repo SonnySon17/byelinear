@@ -252,10 +252,14 @@ func (s *state) toGithub(ctx context.Context) error {
 	}
 	gc := github.NewClient(gchttp)
 
+	counter := 0
 	for _, iss := range s.Issues {
+		counter++
+
 		if byelinearIssueNumber != "" && !strings.HasSuffix(iss.Identifier, "-"+byelinearIssueNumber) {
 			continue
 		}
+
 		liss, err := iss.linear()
 		if err != nil {
 			return err
@@ -267,6 +271,31 @@ func (s *state) toGithub(ctx context.Context) error {
 		if iss.ExportedToGithub {
 			log.Printf("%s: skipped already exported issue", iss.Identifier)
 			continue
+		}
+
+		time.Sleep(time.Second * 5)
+
+		issueNumber, err := strconv.Atoi(strings.Split(iss.Identifier, "-")[1])
+		for counter < issueNumber {
+			log.Printf("Create empty issue with number %v", counter)
+			issueId, err := createEmptyIssue(ctx, gc)
+			if err != nil {
+				log.Printf("failed to create empty issue (retrying in 5 minutes) : %v", err)
+				time.Sleep(time.Minute * 5)
+				continue
+			}
+
+			for {
+				log.Printf("Delete empty issue with number %v", counter)
+				err := deleteEmptyIssue(ctx, gc, issueId)
+				if err != nil {
+					log.Printf("failed to delete empty issue (retrying in 5 minutes) : %v", err)
+					time.Sleep(time.Minute * 5)
+					continue
+				}
+				break
+			}
+			counter++
 		}
 
 		log.Printf("%s: exporting", iss.Identifier)

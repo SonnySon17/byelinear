@@ -358,6 +358,36 @@ func setProjectIssueStatus(ctx context.Context, hc *http.Client, projectID, issI
 	return doGithubQuery(ctx, hc, qreq, nil)
 }
 
+func createEmptyIssue(ctx context.Context, gc *github.Client) (*string, error) {
+	title := "Empty issue"
+	githubIssue, res, err := gc.Issues.Create(ctx, orgName, repoName, &github.IssueRequest{Title: &title})
+	if err != nil {
+		reset := res.Header.Get("x-ratelimit-reset")
+		if reset != "" {
+			i, _ := strconv.ParseInt(reset, 10, 64)
+			t := time.Unix(i, 0)
+			log.Printf("Please try after: %v", t)
+		}
+		return nil, err
+	}
+
+	return githubIssue.NodeID, nil
+}
+
+func deleteEmptyIssue(ctx context.Context, gc *github.Client, issueId *string) error {
+	deleteQuery := `mutation($issueId: ID!) {
+		deleteIssue(input: {issueId: $issueId}) {
+			clientMutationId
+		}
+	}`
+	request := &graphqlQuery{
+		Query:     deleteQuery,
+		Variables: map[string]interface{}{"issueId": issueId},
+	}
+
+	return doGithubQuery(ctx, gc.Client(), request, nil)
+}
+
 func doGithubQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
 	b, res, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -191,4 +192,14 @@ func (li *linearIssue) attachmentsArr() []string {
 		a = append(a, att.URL)
 	}
 	return a
+}
+
+func getNumberFromIssue(issue *issueState) int {
+	n, err := strconv.Atoi(strings.Split(issue.Identifier, "-")[1])
+
+	if err != nil {
+		log.Fatalf("failed to get number from identifier")
+	}
+
+	return n
 }
